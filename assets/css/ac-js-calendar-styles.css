@@ -1,7 +1,38 @@
 .c-year-header{
     display: flex;
+    justify-content: space-between;
 }
 
 .c-month-header{
     display: flex;
+    justify-content: space-between;
+}
+.c-date-list__list, [class*=c-date-list__list--]{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+}
+.c-date-list__item--month-days, [class*=c-date-list__item--]{
+    width: 14.28571%;
+    text-align: center;
+    padding: 1em 0;
+}
+
+.c-date-list__list--month-days{
+
+}
+.c-date-list__item--month-days{
+ border: solid 1px;
+}
+
+.c-date-list__list--heading{
+
+}
+.c-date-list__item--heading{
+
+}
+.is-today{
+    background: #ccc;
 }
