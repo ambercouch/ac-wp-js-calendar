@@ -34,5 +34,9 @@
 
 }
 .is-today{
+    background: #eee;
+    border: solid #333;
+}
+[data-state="on"]{
     background: #ccc;
 }

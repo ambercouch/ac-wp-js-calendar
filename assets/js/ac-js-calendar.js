@@ -84,6 +84,8 @@ let monthHeading;
 
 let monthDaysList;
 
+let monthDays;
+
 
 
 let year = (new Date()).getFullYear();
@@ -98,8 +100,8 @@ eventYearUpdate.initEvent('yearUpdate', true, true);
 let eventMonthUpdate = document.createEvent('Event');
 eventMonthUpdate.initEvent('monthUpdate', true, true);
 
-let eventMonthDaysUpdate = document.createEvent('Event');
-eventMonthDaysUpdate.initEvent('monthDaysUpdate', true, true);
+let eventSelectedDaysUpdate = document.createEvent('Event');
+eventSelectedDaysUpdate.initEvent('selectedDaysUpdate', true, true);
 
 // var eventActClose = document.createEvent('Event');
 // eventActClose.initEvent('actClose', true, true);
@@ -119,40 +121,96 @@ let calDat = {
     currentDay : '',
     daysInMonth : '',
     firstDayOfMonth: '',
+    selectedDays : [],
     init: function(){
+
+        // Set the current year and the selected year
         this.setCurrentYear()
         this.setSelectedYear()
-        
+
+        // set the current day and the selected day
         this.setCurrentMonth()
         this.setSelectedMonth()
 
+        //set the selected day
         this.setCurrentDay()
 
 
-
-
-
-        this.setDaysInMonth();
-
-        this.setFirstDayOfmonth();
-
         calElement.className = 'c-ac-calendar'
         calElement.innerHTML= calTemplate()
-
         calContainer.appendChild(calElement);
 
+        //Query the the year controls
         yearDownButton = document.getElementById("yearDownButton");
         yearUpButton = document.getElementById("yearUpButton");
         yearHeading = document.getElementById("yearHeading");
 
+        //Query the month controls
+        monthDownButton = document.getElementById("monthDownButton");
+        monthUpButton = document.getElementById("monthUpButton");
+        monthHeading = document.getElementById("monthHeading");
+
+        //Query the month days list
         monthDaysList = document.getElementById('monthDaysList')
 
-        this.buildDaysGrid();
-        this.buildDays();
+        //Build the calendar
+        this.updateCalendar();
 
-        this.addTodayClass();
+        //After the calendar is built, query the month days
+        monthDays = document.querySelectorAll('[data-day-of-month]');
+
+        //Year control event listeners
+        yearDownButton.addEventListener('click', function(){
+            calDat.setSelectedYear( calDat.getSelectedYear() - 1)
+        });
+        yearUpButton.addEventListener('click', function(){
+            calDat.setSelectedYear( calDat.getSelectedYear() + 1)
+        });
+
+        window.addEventListener('yearUpdate', function (e) {
+            yearHeading.innerText = calDat.selectedYear;
+            calDat.updateCalendar();
+        })
+
+        //Month control event listeners
+        monthDownButton.addEventListener('click', function(){
+            calDat.setSelectedMonth( calDat.getSelectedMonth() - 1)
+        });
+        monthUpButton.addEventListener('click', function(){
+            calDat.setSelectedMonth( calDat.getSelectedMonth() + 1)
+        });
+
+        window.addEventListener('monthUpdate', function (e) {
+            monthHeading.innerText = calDat.monthNames[calDat.selectedMonth];
+            calDat.updateCalendar();
+        })
 
 
+        window.addEventListener('selectedDaysUpdate', function (e) {
+            console.log(calDat.selectedDays);
+            [].forEach.call(calDat.selectedDays, function (date) {
+                let day = date.getDate();
+                let month = date.getMonth();
+                let year = date.getFullYear();
+                // console.log(date.getDate());
+                // console.log(date.getMonth())
+                // console.log(date.getFullYear());
+                //calDat.addSelectedDayClass(day,month,year);
+            })
+        })
+
+        //month day event listeners
+        monthDays.forEach(function (monthDay) {
+            monthDay.addEventListener('click', function () {
+                let day = this.dataset.dayOfMonth;
+                let month = calDat.selectedMonth;
+                let year = calDat.selectedYear;
+                let state = this.dataset.state;
+                console.log(state);
+                calDat.setSelectedDay(day,month,year,state);
+                //console.log(this.dataset.dayOfMonth);
+            })
+        })
 
     },
     getCurrentYear : function(){
@@ -201,13 +259,26 @@ let calDat = {
     setCurrentDay: function (){
       this.currentDay = this.getCurrentDay();
     },
+    setSelectedDay: function(day = 1, month = this.getSelectedMonth(), year = this.getSelectedYear(), state = 'off'){
+
+        let date = (new Date(year, month, day))
+        let el = document.querySelector('[data-day-of-month="'+day+'" ]');
+        if (state != 'on' ){
+            this.selectedDays.push(date)
+             el.dataset.state = 'on'
+        }else{
+            let dateIndex = this.selectedDays.map(Number).indexOf(+date);
+            this.selectedDays.splice(dateIndex, 1);
+            el.dataset.state = 'off'
+        }
+
+        window.dispatchEvent(eventSelectedDaysUpdate);
+
+    },
     setDaysInMonth : function (month = this.selectedMonth, year = this.selectedYear) {
-        //year = selected year
-        //month + 1 = month after selected month
-        //day 0 = last day of previous month
         let day = 0;
         this.daysInMonth = new Date(year, month + 1, day).getDate();
-        window.dispatchEvent(eventMonthDaysUpdate);
+        //window.dispatchEvent(eventSelectedDaysUpdate);
     },
     setFirstDayOfmonth: function (month = this.selectedMonth, year = this.selectedYear) {
         this.firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -215,6 +286,7 @@ let calDat = {
     buildDaysGrid: function () {
         calDayItemEl.className = 'c-date-list__item--month-days is-empty';
         calDayItemEl.innerText = '';
+        calDayItemEl.dataset.state = 'off';
         for (let i = 0; i < 35; i++) {
             calDayItemEl = calDayItemEl.cloneNode(true)
             calDayItemEl.dataset.elIndex = i;
@@ -246,9 +318,16 @@ let calDat = {
     },
     addTodayClass: function (){
         if (this.selectedYear == this.currentYear && this.selectedMonth == this.currentMonth){
-            el = document.querySelectorAll('[data-day-of-month="'+ calDat.currentDay +'"]');
+            let el = document.querySelectorAll('[data-day-of-month="'+ calDat.currentDay +'"]');
             el[0].classList.add("is-today");
             console.log(el);
+        }
+    },
+    addSelectedDayClass: function (day = 1, month = this.selectedMonth, year = this.selectedYear){
+        if (month == this.selectedMonth && year == this.selectedYear){
+            let selector = '[data-day-of-month="'+ day +'"]';
+            let el = document.querySelector(selector);
+            el.classList.add('is-selected');
         }
     },
     updateCalendar: function () {
@@ -257,6 +336,7 @@ let calDat = {
         this.clearDaysGrid();
         this.buildDaysGrid();
         this.buildDays();
+        this.addTodayClass();
     }
 
 }
@@ -264,34 +344,7 @@ let calDat = {
 
 
 calDat.init();
-console.log(calDat.selectedYear)
 
 
-yearDownButton.addEventListener('click', function(){
-    calDat.setSelectedYear( calDat.getSelectedYear() - 1)
-    console.log(calDat.getSelectedYear())
-});
-yearUpButton.addEventListener('click', function(){
-    calDat.setSelectedYear( calDat.getSelectedYear() + 1)
-});
 
-window.addEventListener('yearUpdate', function (e) {
-    yearHeading.innerText = calDat.selectedYear;
-    calDat.updateCalendar();
-})
 
-monthDownButton = document.getElementById("monthDownButton");
-monthUpButton = document.getElementById("monthUpButton");
-monthHeading = document.getElementById("monthHeading");
-
-monthDownButton.addEventListener('click', function(){
-    calDat.setSelectedMonth( calDat.getSelectedMonth() - 1)
-});
-monthUpButton.addEventListener('click', function(){
-    calDat.setSelectedMonth( calDat.getSelectedMonth() + 1)
-});
-
-window.addEventListener('monthUpdate', function (e) {
-    monthHeading.innerText = calDat.monthNames[calDat.selectedMonth];
-    calDat.updateCalendar();
-})
