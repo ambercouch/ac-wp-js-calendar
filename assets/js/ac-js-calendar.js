@@ -64,47 +64,11 @@ function calTemplate(){
 }
 
 
-let calContainer = document.querySelector("[data-ac-calendar]");
-
-let calElement = document.createElement('div');
-
-let calDayItemEl = document.createElement('li');
-
-let yearDownButton;
-
-let yearUpButton;
-
-let yearHeading;
-
-let monthDownButton;
-
-let monthUpButton;
-
-let monthHeading;
-
-let monthDaysList;
-
-let monthDays;
 
 
 
-let year = (new Date()).getFullYear();
-let month = (new Date()).getMonth();
 
 
-//let updateYearEvent  = new Event('updateYear');
-
-let eventYearUpdate = document.createEvent('Event');
-eventYearUpdate.initEvent('yearUpdate', true, true);
-
-let eventMonthUpdate = document.createEvent('Event');
-eventMonthUpdate.initEvent('monthUpdate', true, true);
-
-let eventSelectedDaysUpdate = document.createEvent('Event');
-eventSelectedDaysUpdate.initEvent('selectedDaysUpdate', true, true);
-
-// var eventActClose = document.createEvent('Event');
-// eventActClose.initEvent('actClose', true, true);
 
 
 let calDat = {
@@ -122,96 +86,148 @@ let calDat = {
     daysInMonth : '',
     firstDayOfMonth: '',
     selectedDays : [],
-    init: function(){
+    els : {
+        calContainer: function(){
+            return document.querySelector("[data-ac-calendar]");
+        },
+        calElement: function(){
+            return document.createElement('div');
+        },
+        calDayItemEl: function(){
+            return document.createElement('li');
+        },
+        yearDownButton: function () {
+            return document.getElementById("yearDownButton");
+        },
+        yearUpButton: function () {
+            return document.getElementById("yearUpButton");
+        },
+        yearHeading: function () {
+            return document.getElementById("yearHeading");
+        },
+        monthDownButton: function () {
+            return  document.getElementById("monthDownButton");
+        },
+        monthUpButton: function () {
+            return   document.getElementById("monthUpButton");
+        },
+        monthHeading: function () {
+            return document.getElementById("monthHeading");
+        },
+        monthDaysList: function () {
+            return document.getElementById('monthDaysList')
+        },
+        monthDays: function () {
+            return document.querySelectorAll('[data-day-of-month]');
+        }
 
-        // Set the current year and the selected year
-        this.setCurrentYear()
-        this.setSelectedYear()
+    },
+    init: {
+      build: function(){
+          calDat.init.events.createEvent('yearUpdate' );
+          calDat.init.events.createEvent('monthUpdate' );
+          calDat.init.events.createEvent('selectedDaysUpdate' );
+          calDat.init.events.createEvent('daySelected')
 
-        // set the current day and the selected day
-        this.setCurrentMonth()
-        this.setSelectedMonth()
+          // Set the current year and the selected year
+          calDat.setCurrentYear()
+          calDat.setSelectedYear()
 
-        //set the selected day
-        this.setCurrentDay()
+          // set the current day and the selected day
+          calDat.setCurrentMonth()
+          calDat.setSelectedMonth()
 
-
-        calElement.className = 'c-ac-calendar'
-        calElement.innerHTML= calTemplate()
-        calContainer.appendChild(calElement);
-
-        //Query the the year controls
-        yearDownButton = document.getElementById("yearDownButton");
-        yearUpButton = document.getElementById("yearUpButton");
-        yearHeading = document.getElementById("yearHeading");
-
-        //Query the month controls
-        monthDownButton = document.getElementById("monthDownButton");
-        monthUpButton = document.getElementById("monthUpButton");
-        monthHeading = document.getElementById("monthHeading");
-
-        //Query the month days list
-        monthDaysList = document.getElementById('monthDaysList')
-
-        //Build the calendar
-        this.updateCalendar();
-
-        //After the calendar is built, query the month days
-        monthDays = document.querySelectorAll('[data-day-of-month]');
-
-        //Year control event listeners
-        yearDownButton.addEventListener('click', function(){
-            calDat.setSelectedYear( calDat.getSelectedYear() - 1)
-        });
-        yearUpButton.addEventListener('click', function(){
-            calDat.setSelectedYear( calDat.getSelectedYear() + 1)
-        });
-
-        window.addEventListener('yearUpdate', function (e) {
-            yearHeading.innerText = calDat.selectedYear;
-            calDat.updateCalendar();
-        })
-
-        //Month control event listeners
-        monthDownButton.addEventListener('click', function(){
-            calDat.setSelectedMonth( calDat.getSelectedMonth() - 1)
-        });
-        monthUpButton.addEventListener('click', function(){
-            calDat.setSelectedMonth( calDat.getSelectedMonth() + 1)
-        });
-
-        window.addEventListener('monthUpdate', function (e) {
-            monthHeading.innerText = calDat.monthNames[calDat.selectedMonth];
-            calDat.updateCalendar();
-        })
+          //set the selected day
+          calDat.setCurrentDay()
+          let calElement = calDat.els.calElement();
+          calElement.className = 'c-ac-calendar'
+          calElement.innerHTML= calTemplate()
+          calDat.els.calContainer().appendChild(calElement);
 
 
-        window.addEventListener('selectedDaysUpdate', function (e) {
-            console.log(calDat.selectedDays);
-            [].forEach.call(calDat.selectedDays, function (date) {
-                let day = date.getDate();
-                let month = date.getMonth();
-                let year = date.getFullYear();
-                // console.log(date.getDate());
-                // console.log(date.getMonth())
-                // console.log(date.getFullYear());
-                //calDat.addSelectedDayClass(day,month,year);
-            })
-        })
+          //Build the calendar
+          calDat.updateCalendar();
 
-        //month day event listeners
-        monthDays.forEach(function (monthDay) {
-            monthDay.addEventListener('click', function () {
-                let day = this.dataset.dayOfMonth;
-                let month = calDat.selectedMonth;
-                let year = calDat.selectedYear;
-                let state = this.dataset.state;
-                console.log(state);
-                calDat.setSelectedDay(day,month,year,state);
-                //console.log(this.dataset.dayOfMonth);
-            })
-        })
 
+          calDat.init.listeners.yearControl();
+          calDat.init.listeners.monthControl();
+
+
+      },
+
+        events: {
+            createEvent: function (eventListen, eventDispatch = false, deetsObj) {
+                eventDispatch = (eventDispatch == false) ? 'event' + eventListen.charAt(0).toUpperCase() + eventListen.slice(1) : eventDispatch ;
+                this[eventDispatch] = new CustomEvent(eventListen, {detail : deetsObj});
+                //this[eventDispatch].initEvent(eventListen, true, true);
+            }
+        },
+        listeners : {
+            yearControl : function(){
+                //Year control event listeners
+                calDat.els.yearDownButton().addEventListener('click', function(){
+                    calDat.setSelectedYear( calDat.getSelectedYear() - 1)
+                });
+                calDat.els.yearUpButton().addEventListener('click', function(){
+                    calDat.setSelectedYear( calDat.getSelectedYear() + 1)
+                });
+                window.addEventListener('yearUpdate', function (e) {
+                    calDat.els.yearHeading().innerText = calDat.selectedYear;
+                    calDat.updateCalendar();
+                })
+
+            },
+            monthControl : function () {
+
+                //Month control event listeners
+                calDat.els.monthDownButton().addEventListener('click', function(){
+                    calDat.setSelectedMonth( calDat.getSelectedMonth() - 1)
+                });
+                calDat.els.monthUpButton().addEventListener('click', function(){
+                    calDat.setSelectedMonth( calDat.getSelectedMonth() + 1)
+                });
+
+                window.addEventListener('monthUpdate', function (e) {
+                    calDat.els.monthHeading().innerText = calDat.monthNames[calDat.selectedMonth];
+                    calDat.updateCalendar();
+                })
+            },
+            dayControl : function () {
+
+                let clickHandler;
+                let selectedDaysHandler = function(){
+
+                    document.querySelectorAll('[data-day-of-month]').forEach(function (el) {
+                        el.dataset.state = 'off';
+                    });
+                    [].forEach.call(calDat.selectedDays, function (date) {
+                        let day = date.getDate();
+                        let month = date.getMonth();
+                        let year = date.getFullYear();
+                        if(month == calDat.selectedMonth && year == calDat.selectedYear){
+                            document.querySelectorAll('[data-day-of-month="'+day+'"]').forEach(function (el) {
+                                el.dataset.state = 'on';
+                            })
+                        }
+                    })
+                }
+                window.removeEventListener('selectedDaysUpdate', selectedDaysHandler);
+                window.addEventListener('selectedDaysUpdate', selectedDaysHandler);
+
+                //month day event listeners
+                calDat.els.monthDays().forEach(function (monthDay) {
+                    clickHandler = function(){
+                        let day = this.dataset.dayOfMonth;
+                        let month = calDat.selectedMonth;
+                        let year = calDat.selectedYear;
+                        let state = this.dataset.state;
+                        calDat.setSelectedDay(day,month,year,state);
+                    }
+                    monthDay.removeEventListener('click', clickHandler);
+                    monthDay.addEventListener('click', clickHandler);
+                })
+            }
+        },
     },
     getCurrentYear : function(){
         return (new Date()).getFullYear();
@@ -225,7 +241,7 @@ let calDat = {
     setSelectedYear : function(year = this.getCurrentYear()) {
         this.selectedYear = year;
         console.log('selected year' + year);
-        window.dispatchEvent(eventYearUpdate);
+        window.dispatchEvent(calDat.init.events.eventYearUpdate);
     },
     getCurrentMonth : function(){
         return (new Date()).getMonth();
@@ -251,7 +267,7 @@ let calDat = {
             this.setSelectedYear( this.getSelectedYear() + 1)
         }
         this.selectedMonth = month;
-        window.dispatchEvent(eventMonthUpdate);
+        window.dispatchEvent(calDat.init.events.eventMonthUpdate);
     },
     getCurrentDay: function(){
         return (new Date()).getDate();
@@ -260,19 +276,21 @@ let calDat = {
       this.currentDay = this.getCurrentDay();
     },
     setSelectedDay: function(day = 1, month = this.getSelectedMonth(), year = this.getSelectedYear(), state = 'off'){
-
+        console.log('setSelectedDay')
         let date = (new Date(year, month, day))
         let el = document.querySelector('[data-day-of-month="'+day+'" ]');
         if (state != 'on' ){
             this.selectedDays.push(date)
-             el.dataset.state = 'on'
+             //el.dataset.state = 'on'
+            calDat.init.events.createEvent('daySelected',false,{'date': date, 'day': day, 'month' : month, 'year' : year})
+            window.dispatchEvent(calDat.init.events.eventDaySelected);
         }else{
             let dateIndex = this.selectedDays.map(Number).indexOf(+date);
             this.selectedDays.splice(dateIndex, 1);
-            el.dataset.state = 'off'
+            //el.dataset.state = 'off'
         }
 
-        window.dispatchEvent(eventSelectedDaysUpdate);
+        window.dispatchEvent(calDat.init.events.eventSelectedDaysUpdate);
 
     },
     setDaysInMonth : function (month = this.selectedMonth, year = this.selectedYear) {
@@ -284,28 +302,42 @@ let calDat = {
         this.firstDayOfMonth = new Date(year, month, 1).getDay();
     },
     buildDaysGrid: function () {
+
+        let calDayItemEl = calDat.els.calDayItemEl();
+
         calDayItemEl.className = 'c-date-list__item--month-days is-empty';
         calDayItemEl.innerText = '';
         calDayItemEl.dataset.state = 'off';
-        for (let i = 0; i < 35; i++) {
+
+        let daysInMonth = calDat.daysInMonth;
+        let firstDayOfMonth = (calDat.firstDayOfMonth == 0) ? 6 : calDat.firstDayOfMonth - 1;
+        let gridCount = daysInMonth + firstDayOfMonth;
+
+        if(gridCount > 28 && gridCount < 36 ){
+            gridCount = 35;
+        } else if (gridCount > 35 ){
+            gridCount = 42
+        }
+
+        console.log('days in month' + daysInMonth);
+        console.log('first day of month' + firstDayOfMonth)
+        for (let i = 0; i < gridCount ; i++) {
             calDayItemEl = calDayItemEl.cloneNode(true)
             calDayItemEl.dataset.elIndex = i;
 
             calDayItemEl.id = 'dayIndex' + i;
 
-            monthDaysList.appendChild(calDayItemEl);
+            this.els.monthDaysList().appendChild(calDayItemEl);
         }
     },
     clearDaysGrid: function () {
-        monthDaysList.innerHTML = '';
+        this.els.monthDaysList().innerHTML = '';
     },
     buildDays: function () {
         let startDay = this.firstDayOfMonth - 1;
         if (startDay < 0){
             startDay = 6
         }
-        console.log('startDay');
-        console.log(startDay);
         for (let i = 0; i < this.daysInMonth; i++) {
             let day = i + 1;
 
@@ -315,21 +347,15 @@ let calDat = {
             el.dataset.dayOfMonth = day;
             el.classList.remove('is-empty');
         }
+        calDat.init.listeners.dayControl();
     },
     addTodayClass: function (){
         if (this.selectedYear == this.currentYear && this.selectedMonth == this.currentMonth){
             let el = document.querySelectorAll('[data-day-of-month="'+ calDat.currentDay +'"]');
             el[0].classList.add("is-today");
-            console.log(el);
         }
     },
-    addSelectedDayClass: function (day = 1, month = this.selectedMonth, year = this.selectedYear){
-        if (month == this.selectedMonth && year == this.selectedYear){
-            let selector = '[data-day-of-month="'+ day +'"]';
-            let el = document.querySelector(selector);
-            el.classList.add('is-selected');
-        }
-    },
+
     updateCalendar: function () {
         this.setDaysInMonth();
         this.setFirstDayOfmonth();
@@ -337,14 +363,14 @@ let calDat = {
         this.buildDaysGrid();
         this.buildDays();
         this.addTodayClass();
+        //calDat.init.listeners.dayControl();
+        window.dispatchEvent(calDat.init.events.eventSelectedDaysUpdate);
     }
 
 }
 
 
 
-calDat.init();
-
-
+calDat.init.build();
 
 
