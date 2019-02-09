@@ -63,14 +63,6 @@ function calTemplate(){
 `;
 }
 
-
-
-
-
-
-
-
-
 let calDat = {
     monthNames : ["January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -123,38 +115,6 @@ let calDat = {
 
     },
     init: {
-      build: function(){
-          calDat.init.events.createEvent('yearUpdate' );
-          calDat.init.events.createEvent('monthUpdate' );
-          calDat.init.events.createEvent('selectedDaysUpdate' );
-          calDat.init.events.createEvent('daySelected')
-
-          // Set the current year and the selected year
-          calDat.setCurrentYear()
-          calDat.setSelectedYear()
-
-          // set the current day and the selected day
-          calDat.setCurrentMonth()
-          calDat.setSelectedMonth()
-
-          //set the selected day
-          calDat.setCurrentDay()
-          let calElement = calDat.els.calElement();
-          calElement.className = 'c-ac-calendar'
-          calElement.innerHTML= calTemplate()
-          calDat.els.calContainer().appendChild(calElement);
-
-
-          //Build the calendar
-          calDat.updateCalendar();
-
-
-          calDat.init.listeners.yearControl();
-          calDat.init.listeners.monthControl();
-
-
-      },
-
         events: {
             createEvent: function (eventListen, eventDispatch = false, deetsObj) {
                 eventDispatch = (eventDispatch == false) ? 'event' + eventListen.charAt(0).toUpperCase() + eventListen.slice(1) : eventDispatch ;
@@ -173,7 +133,7 @@ let calDat = {
                 });
                 window.addEventListener('yearUpdate', function (e) {
                     calDat.els.yearHeading().innerText = calDat.selectedYear;
-                    calDat.updateCalendar();
+                    calDat.init.updateCalendar();
                 })
 
             },
@@ -189,7 +149,7 @@ let calDat = {
 
                 window.addEventListener('monthUpdate', function (e) {
                     calDat.els.monthHeading().innerText = calDat.monthNames[calDat.selectedMonth];
-                    calDat.updateCalendar();
+                    calDat.init.updateCalendar();
                 })
             },
             dayControl : function () {
@@ -228,6 +188,101 @@ let calDat = {
                 })
             }
         },
+        build: function(){
+          calDat.init.events.createEvent('yearUpdate' );
+          calDat.init.events.createEvent('monthUpdate' );
+          calDat.init.events.createEvent('selectedDaysUpdate' );
+          calDat.init.events.createEvent('daySelected')
+
+          // Set the current year and the selected year
+          calDat.setCurrentYear()
+          calDat.setSelectedYear()
+
+          // set the current day and the selected day
+          calDat.setCurrentMonth()
+          calDat.setSelectedMonth()
+
+          //set the selected day
+          calDat.setCurrentDay()
+          let calElement = calDat.els.calElement();
+          calElement.className = 'c-ac-calendar'
+          calElement.innerHTML= calTemplate()
+          calDat.els.calContainer().appendChild(calElement);
+
+
+          //Build the calendar
+          calDat.init.updateCalendar();
+
+
+          calDat.init.listeners.yearControl();
+          calDat.init.listeners.monthControl();
+
+
+      },
+        buildDaysGrid: function () {
+
+            let calDayItemEl = calDat.els.calDayItemEl();
+
+            calDayItemEl.className = 'c-date-list__item--month-days is-empty';
+            calDayItemEl.innerText = '';
+            calDayItemEl.dataset.state = 'off';
+
+            let daysInMonth = calDat.daysInMonth;
+            let firstDayOfMonth = (calDat.firstDayOfMonth == 0) ? 6 : calDat.firstDayOfMonth - 1;
+            let gridCount = daysInMonth + firstDayOfMonth;
+
+            if(gridCount > 28 && gridCount < 36 ){
+                gridCount = 35;
+            } else if (gridCount > 35 ){
+                gridCount = 42
+            }
+
+            console.log('days in month' + daysInMonth);
+            console.log('first day of month' + firstDayOfMonth)
+            for (let i = 0; i < gridCount ; i++) {
+                calDayItemEl = calDayItemEl.cloneNode(true)
+                calDayItemEl.dataset.elIndex = i;
+
+                calDayItemEl.id = 'dayIndex' + i;
+
+                calDat.els.monthDaysList().appendChild(calDayItemEl);
+            }
+        },
+        clearDaysGrid: function () {
+            calDat.els.monthDaysList().innerHTML = '';
+        },
+        buildDays: function () {
+            let startDay = calDat.firstDayOfMonth - 1;
+            if (startDay < 0){
+                startDay = 6
+            }
+            for (let i = 0; i < calDat.daysInMonth; i++) {
+                let day = i + 1;
+
+                let offset = startDay  + i;
+                let el = document.getElementById('dayIndex' + offset)
+                el.innerText = day;
+                el.dataset.dayOfMonth = day;
+                el.classList.remove('is-empty');
+            }
+            calDat.init.listeners.dayControl();
+        },
+        addTodayClass: function (){
+            if (calDat.selectedYear == calDat.currentYear && calDat.selectedMonth == calDat.currentMonth){
+                let el = document.querySelectorAll('[data-day-of-month="'+ calDat.currentDay +'"]');
+                el[0].classList.add("is-today");
+            }
+        },
+        updateCalendar: function () {
+            calDat.setDaysInMonth();
+            calDat.setFirstDayOfMonth();
+            this.clearDaysGrid();
+            this.buildDaysGrid();
+            this.buildDays();
+            this.addTodayClass();
+            //calDat.init.listeners.dayControl();
+            window.dispatchEvent(calDat.init.events.eventSelectedDaysUpdate);
+        }
     },
     getCurrentYear : function(){
         return (new Date()).getFullYear();
@@ -298,74 +353,10 @@ let calDat = {
         this.daysInMonth = new Date(year, month + 1, day).getDate();
         //window.dispatchEvent(eventSelectedDaysUpdate);
     },
-    setFirstDayOfmonth: function (month = this.selectedMonth, year = this.selectedYear) {
+    setFirstDayOfMonth: function (month = this.selectedMonth, year = this.selectedYear) {
         this.firstDayOfMonth = new Date(year, month, 1).getDay();
     },
-    buildDaysGrid: function () {
 
-        let calDayItemEl = calDat.els.calDayItemEl();
-
-        calDayItemEl.className = 'c-date-list__item--month-days is-empty';
-        calDayItemEl.innerText = '';
-        calDayItemEl.dataset.state = 'off';
-
-        let daysInMonth = calDat.daysInMonth;
-        let firstDayOfMonth = (calDat.firstDayOfMonth == 0) ? 6 : calDat.firstDayOfMonth - 1;
-        let gridCount = daysInMonth + firstDayOfMonth;
-
-        if(gridCount > 28 && gridCount < 36 ){
-            gridCount = 35;
-        } else if (gridCount > 35 ){
-            gridCount = 42
-        }
-
-        console.log('days in month' + daysInMonth);
-        console.log('first day of month' + firstDayOfMonth)
-        for (let i = 0; i < gridCount ; i++) {
-            calDayItemEl = calDayItemEl.cloneNode(true)
-            calDayItemEl.dataset.elIndex = i;
-
-            calDayItemEl.id = 'dayIndex' + i;
-
-            this.els.monthDaysList().appendChild(calDayItemEl);
-        }
-    },
-    clearDaysGrid: function () {
-        this.els.monthDaysList().innerHTML = '';
-    },
-    buildDays: function () {
-        let startDay = this.firstDayOfMonth - 1;
-        if (startDay < 0){
-            startDay = 6
-        }
-        for (let i = 0; i < this.daysInMonth; i++) {
-            let day = i + 1;
-
-            let offset = startDay  + i;
-            let el = document.getElementById('dayIndex' + offset)
-            el.innerText = day;
-            el.dataset.dayOfMonth = day;
-            el.classList.remove('is-empty');
-        }
-        calDat.init.listeners.dayControl();
-    },
-    addTodayClass: function (){
-        if (this.selectedYear == this.currentYear && this.selectedMonth == this.currentMonth){
-            let el = document.querySelectorAll('[data-day-of-month="'+ calDat.currentDay +'"]');
-            el[0].classList.add("is-today");
-        }
-    },
-
-    updateCalendar: function () {
-        this.setDaysInMonth();
-        this.setFirstDayOfmonth();
-        this.clearDaysGrid();
-        this.buildDaysGrid();
-        this.buildDays();
-        this.addTodayClass();
-        //calDat.init.listeners.dayControl();
-        window.dispatchEvent(calDat.init.events.eventSelectedDaysUpdate);
-    }
 
 }
 
